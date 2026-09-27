@@ -1,0 +1,29 @@
+name: Test public Cask
+
+on:
+  push:
+    paths:
+      - Casks/uqda.rb
+      - .github/workflows/cask.yml
+  workflow_dispatch:
+
+jobs:
+  install:
+    name: Install, update, and uninstall (${{ matrix.runner }})
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [macos-latest, macos-15-intel]
+    steps:
+      - name: Install from the public tap
+        run: |
+          brew install --cask Uqda/tap/uqda
+          /usr/local/bin/uqda --version | grep -F 'Uqda Core 26 Beta 1'
+          sudo /usr/local/bin/uqda -useconffile /etc/uqda/uqda.conf -checkconf
+          IDENTITY=$(sudo shasum -a 256 /etc/uqda/uqda.conf)
+          brew update
+          brew upgrade --cask Uqda/tap/uqda
+          test "$IDENTITY" = "$(sudo shasum -a 256 /etc/uqda/uqda.conf)"
+          brew uninstall --cask Uqda/tap/uqda
+          sudo test -s /etc/uqda/uqda.conf

@@ -19,7 +19,10 @@ jobs:
       - name: Install from the public tap
         run: |
           brew install --cask Uqda/tap/uqda
-          /usr/local/bin/uqda --version | grep -Fx 'Uqda Core 26'
+          EXPECTED_VERSION=$(brew info --cask --json=v2 Uqda/tap/uqda | jq -r '.casks[0].version')
+          test -n "$EXPECTED_VERSION"
+          test "$(/usr/local/bin/uqda --version)" = "Uqda Core $EXPECTED_VERSION"
+          test "$(/usr/local/bin/uqdactl version)" = "Uqda Core $EXPECTED_VERSION"
           sudo /usr/local/bin/uqda -useconffile /etc/uqda/uqda.conf -checkconf
           IDENTITY=$(sudo shasum -a 256 /etc/uqda/uqda.conf)
           brew update

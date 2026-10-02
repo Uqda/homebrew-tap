@@ -26,14 +26,14 @@ jobs:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           fetch-depth: 0
-      - name: Upgrade from 26.0.2 and test the checked-out Cask
+      - name: Upgrade from 26.0.3 and test the checked-out Cask
         run: |
           brew tap Uqda/tap
           TAP_PATH=$(brew --repository Uqda/tap)
           # A verified historical Cask makes this a real old-to-new upgrade.
-          git show 65c3a613b7a3ab1e024773f87adce473fa4298fa:Casks/uqda.rb > "$TAP_PATH/Casks/uqda.rb"
+          git show afc7f820b51729ba66909417d96b95ac97a3a91c:Casks/uqda.rb > "$TAP_PATH/Casks/uqda.rb"
           brew install --cask Uqda/tap/uqda
-          test "$(/usr/local/bin/uqda --version)" = "Uqda Core 26.0.2"
+          test "$(/usr/local/bin/uqda --version)" = "Uqda Core 26.0.3"
           IDENTITY=$(sudo shasum -a 256 /etc/uqda/uqda.conf)
           # PR checks must install the candidate, not the old Cask on main.
           cp Casks/uqda.rb "$TAP_PATH/Casks/uqda.rb"
@@ -44,6 +44,7 @@ jobs:
           test "$(/usr/local/bin/uqdactl version)" = "Uqda Core $EXPECTED_VERSION"
           sudo /usr/local/bin/uqda -useconffile /etc/uqda/uqda.conf -checkconf
           /usr/local/bin/uqda help addPeer | grep -F 'uri='
+          /usr/local/bin/uqda help find | grep -F 'country=NAME'
           sudo /usr/local/bin/uqda status --json | jq -e '.checks | all(.status != "fail")'
           sudo /usr/local/bin/uqda info
           test "$IDENTITY" = "$(sudo shasum -a 256 /etc/uqda/uqda.conf)"

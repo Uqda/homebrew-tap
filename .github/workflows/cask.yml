@@ -1,11 +1,18 @@
 name: Test public Cask
 
 on:
+  pull_request:
+    paths:
+      - Casks/uqda.rb
+      - .github/workflows/cask.yml
   push:
     paths:
       - Casks/uqda.rb
       - .github/workflows/cask.yml
   workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   install:
@@ -16,17 +23,34 @@ jobs:
       matrix:
         runner: [macos-latest, macos-15-intel]
     steps:
-      - name: Install from the public tap
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          fetch-depth: 0
+      - name: Upgrade from 26.0.1 and test the checked-out Cask
         run: |
+          brew tap Uqda/tap
+          TAP_PATH=$(brew --repository Uqda/tap)
+          # A verified historical Cask makes this a real old-to-new upgrade.
+          git show 616a9a9c4282db725358b1b99c48a3201735be28:Casks/uqda.rb > "$TAP_PATH/Casks/uqda.rb"
           brew install --cask Uqda/tap/uqda
+          test "$(/usr/local/bin/uqda --version)" = "Uqda Core 26.0.1"
+          IDENTITY=$(sudo shasum -a 256 /etc/uqda/uqda.conf)
+          # PR checks must install the candidate, not the old Cask on main.
+          cp Casks/uqda.rb "$TAP_PATH/Casks/uqda.rb"
+          brew upgrade --cask Uqda/tap/uqda
           EXPECTED_VERSION=$(brew info --cask --json=v2 Uqda/tap/uqda | jq -r '.casks[0].version')
           test -n "$EXPECTED_VERSION"
           test "$(/usr/local/bin/uqda --version)" = "Uqda Core $EXPECTED_VERSION"
           test "$(/usr/local/bin/uqdactl version)" = "Uqda Core $EXPECTED_VERSION"
           sudo /usr/local/bin/uqda -useconffile /etc/uqda/uqda.conf -checkconf
-          IDENTITY=$(sudo shasum -a 256 /etc/uqda/uqda.conf)
+          test "$IDENTITY" = "$(sudo shasum -a 256 /etc/uqda/uqda.conf)"
+          brew reinstall --cask Uqda/tap/uqda
+          test "$IDENTITY" = "$(sudo shasum -a 256 /etc/uqda/uqda.conf)"
           brew update
+          cp Casks/uqda.rb "$(brew --repository Uqda/tap)/Casks/uqda.rb"
           brew upgrade --cask Uqda/tap/uqda
+          test "$(/usr/local/bin/uqda --version)" = "Uqda Core $EXPECTED_VERSION"
+          test "$(/usr/local/bin/uqdactl version)" = "Uqda Core $EXPECTED_VERSION"
           test "$IDENTITY" = "$(sudo shasum -a 256 /etc/uqda/uqda.conf)"
           brew uninstall --cask Uqda/tap/uqda
           sudo test -s /etc/uqda/uqda.conf

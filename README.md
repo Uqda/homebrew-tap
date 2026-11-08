@@ -1,6 +1,6 @@
 # Uqda Homebrew tap
 
-This tap packages the public `v26.0.0` release of [Uqda Core](https://github.com/Uqda/Core).
+This tap packages the latest stable release (`v26.1.0`, Uqda 26.1) of [Uqda Core](https://github.com/Uqda/Core).
 
 Install on macOS (Apple Silicon or Intel):
 
